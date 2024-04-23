@@ -6,36 +6,39 @@ const ctx = canvas.getContext('2d');
 
 let particles = [];
 let config = {
-    numParticles: 1200,
+    numParticles: 1500,
     canvasWidth: 1600,
     canvasHeight: 800,
     particleTypes: 5,
-    closeRange: [
-        [-0.4, -1.0, -1.5, -1.1, -1.3],
-        [-1.0, -0.4, -1.0, -0.2, -0.1],
-        [-1.5, -1.0, -0.4, -0.05, -0.05],
-        [-1.1, -0.2, -0.05, -0.4, -0.05],
-        [-1.3, -0.1, -0.05, -0.05, -0.4]
+    force: [
+        [ 3.00,   0.35,  0.40,  0.50,  0.50],
+        [ 0.35,   0.30, -0.10,  0.10,  0.10],
+        [ 0.40,  -0.10,  3.00, -0.10, -0.10],
+        [ 0.50,   0.10, -0.10,  0.30, -0.20],
+        [ 0.50,   0.10, -0.10, -0.20,  0.60]
     ],
-    longRange: [
-        [0.9, 0.8, 0.7, -0.4, 0.6],
-        [0.8, 0.3, 1.2, -0.5, 0.5],
-        [0.7, 1.2, 0.9, 0.1, 0.5],
-        [-0.4, -0.5, 0.1, 0.9, 0.7],
-        [0.6, 0.5, 0.5, 0.7, 0.9]
-    ],
+
+
     maxDistance: 100,
     cutoffDistance: 50,
-    minDistance: 20
+
+    samecloseRangeCoef: 0.5,
+    differentcloseRangeCoef: 1.75,
+
+    speedUpperBound: 1.5,
+    speedLowerBound: 0.05,
+
+    speedDecay: 0.90,
+    speedGrowth: 1.05,
 };
-
-
-const closeRangeCoef = 0.5;
-const longRangeCoef = 0.3;
 
 
 canvas.width = config.canvasWidth;
 canvas.height = config.canvasHeight;
+
+function abs(x) {
+    return x < 0 ? -x : x;
+}
 
 class Particle {
     constructor(numParticles, canvasWidth, canvasHeight) {
@@ -65,6 +68,8 @@ class Particle {
             let vXI = this.velocities[indexI];
             let vYI = this.velocities[indexI + 1];
 
+            const forces = config.force[this.types[i]];
+
             for (let j = 0; j < this.numParticles; j++) {
                 if (i !== j) {
                     const indexJ = j * 2;
@@ -77,25 +82,33 @@ class Particle {
                     dy -= this.canvasHeight * Math.round(dy / this.canvasHeight);
 
                     const distance = Math.sqrt(dx * dx + dy * dy);
+
+
                     if (distance < config.maxDistance) {
+                        let force = forces[this.types[j]];
+
+                        if (distance < config.cutoffDistance) {
+                            const coef = this.types[i] === this.types[j] ? config.samecloseRangeCoef : config.differentcloseRangeCoef;
+                            force = -(abs(force * coef));
+                        }
+
                         const forceDirection = Math.atan2(dy, dx);
-                        const forceType = distance < config.cutoffDistance ? 'closeRange' : 'longRange';
-                        const coef = distance < config.cutoffDistance ? closeRangeCoef : longRangeCoef;
-                        const forceMagnitude = config[forceType][this.types[i]][this.types[j]] / (distance);
-                        vXI += Math.cos(forceDirection) * forceMagnitude * coef;
-                        vYI += Math.sin(forceDirection) * forceMagnitude * coef;
+                        const forceMagnitude = force / distance;
+
+                        vXI += Math.cos(forceDirection) * forceMagnitude;
+                        vYI += Math.sin(forceDirection) * forceMagnitude;
                     }
                 }
             }
 
 
             const speed = Math.sqrt(vXI * vXI + vYI * vYI);
-            if (speed > 2.0) {
-                vXI *= 0.97;
-                vYI *= 0.97;
-            } else if (speed < 0.1) {
-                vXI *= 1.001;
-                vYI *= 1.001;
+            if (speed > config.speedUpperBound) {
+                vXI *= config.speedDecay;
+                vYI *= config.speedDecay;
+            } else if (speed < config.speedLowerBound) {
+                vXI *= config.speedGrowth;
+                vYI *= config.speedGrowth;
             }
 
 
@@ -112,7 +125,9 @@ class Particle {
             const index = i * 2;
             ctx.beginPath();
             ctx.arc(this.positions[index], this.positions[index + 1], 2, 0, 2 * Math.PI);
-            ctx.fillStyle = `hsl(${this.types[i] * 360 / config.particleTypes}, 100%, 50%)`;
+            ctx.fillStyle = `hsl(${this.types[i] * 360 / config.particleTypes}, 50%, 50%)`;
+            ctx.shadowColor = 'gray';
+            ctx.shadowBlur = 20;
             ctx.fill();
         }
     }
