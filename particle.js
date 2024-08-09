@@ -8,6 +8,7 @@ export class Particle {
         this.velocities = new Float32Array(numParticles * 2);
         this.types = new Uint8Array(numParticles);
         this.initializeParticles();
+        this.computeForce = config.computeForce;
     }
 
     initializeParticles() {
@@ -15,8 +16,8 @@ export class Particle {
             const index = i * 2;
             this.positions[index] = Math.random() * this.canvasWidth;
             this.positions[index + 1] = Math.random() * this.canvasHeight;
-            this.velocities[index] = (Math.random() * 2 - 1) / 4;
-            this.velocities[index + 1] = (Math.random() * 2 - 1) / 4;
+            this.velocities[index] = (Math.random() * 2 - 1);
+            this.velocities[index + 1] = (Math.random() * 2 - 1);
             this.types[i] = i % this.config.particleTypes;
         }
     }
@@ -27,8 +28,6 @@ export class Particle {
             let vXI = this.velocities[indexI];
             let vYI = this.velocities[indexI + 1];
 
-            const forces = this.config.force[this.types[i]];
-
             for (let j = 0; j < this.numParticles; j++) {
                 if (i !== j) {
                     const indexJ = j * 2;
@@ -36,24 +35,30 @@ export class Particle {
                     const dy = this.getWrappedDistance(this.positions[indexJ + 1], this.positions[indexI + 1], this.canvasHeight);
                     const distance = Math.sqrt(dx * dx + dy * dy);
 
-                    if (distance < this.config.maxDistance) {
-                        let force = forces[this.types[j]];
-                        if (distance < this.config.cutoffDistance) {
-                            const coef = this.types[i] === this.types[j] ? this.config.samecloseRangeCoef : this.config.differentcloseRangeCoef;
-                            force = -(Math.abs(force * coef));
-                        }
+                    let force = this.computeForce(
+                        this.types[i],
+                        this.types[j],
+                        distance,
+                    )
 
-                        const forceDirection = Math.atan2(dy, dx);
-                        const forceMagnitude = force / distance;
-
-                        vXI += Math.cos(forceDirection) * forceMagnitude;
-                        vYI += Math.sin(forceDirection) * forceMagnitude;
+                    if (force === 0) {
+                        continue;
                     }
+                    
+                    const forceDirection = Math.atan2(dy, dx);
+
+                    vXI += Math.cos(forceDirection) * force * this.config.coef;
+                    vYI += Math.sin(forceDirection) * force * this.config.coef;
+
                 }
             }
 
             this.updateVelocity(indexI, vXI, vYI);
-            this.updatePosition(indexI, vXI, vYI);
+        }
+
+        for (let i = 0; i < this.numParticles; i++) {
+            const indexI = i * 2;
+            this.updatePosition(indexI, this.velocities[indexI], this.velocities[indexI + 1]);
         }
     }
 
