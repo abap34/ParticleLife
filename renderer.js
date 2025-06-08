@@ -15,10 +15,10 @@ export class Renderer {
 
     drawParticle(x, y, type, totalTypes) {
         this.ctx.beginPath();
-        this.ctx.arc(x, y, 2, 0, 2 * Math.PI);
+        this.ctx.arc(x, y, 3, 0, 5 * Math.PI);
         this.ctx.fillStyle = `hsl(${type * 360 / totalTypes}, 50%, 50%)`;
-        this.ctx.shadowColor = 'gray';
-        this.ctx.shadowBlur = 20;
+        this.ctx.shadowColor = 'lightgray';
+        this.ctx.shadowBlur = 10;
         this.ctx.fill();
     }
 }

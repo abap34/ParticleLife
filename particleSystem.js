@@ -6,6 +6,8 @@ export class ParticleSystem {
     constructor(ctx, config) {
         this.particles = new Particle(config.numParticles, config.canvasWidth, config.canvasHeight, config);
         this.renderer = new Renderer(ctx, config.canvasWidth, config.canvasHeight);
+        this.isRunning = false;
+        this.animationFrameId = null;
     }
 
     update() {
@@ -14,10 +16,28 @@ export class ParticleSystem {
     }
 
     start() {
+        if (this.isRunning) return;
+        
+        this.isRunning = true;
+        
         const loop = () => {
+            if (!this.isRunning) return;
+            
             this.update();
-            requestAnimationFrame(loop);
+            this.animationFrameId = requestAnimationFrame(loop);
         };
+        
         loop();
+    }
+    
+    stop() {
+        if (!this.isRunning) return;
+        
+        this.isRunning = false;
+        
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
     }
 }

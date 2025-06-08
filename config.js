@@ -7,11 +7,11 @@ const maxDistance = 100;
 
 // 同種の粒子間が全く同じ位置にならないよう、反発し始める距離
 const replusionDistances = {
-    0: 10,
-    1: 20,
-    2: 30,
-    3: 40,
-    4: 50,
+    0: 20,
+    1: 30,
+    2: 40,
+    3: 50,
+    4: 60,
 };
 
 // 同種の粒子間の反発力
@@ -158,7 +158,7 @@ function computeForce(typeI, typeJ, d) {
 
 
 export const config = {
-    numParticles: 3200,
+    numParticles: 1200,
     canvasWidth: 1600,
     canvasHeight: 800,
     particleTypes: 5,
@@ -168,8 +168,16 @@ export const config = {
     speedUpperBound: 1.5,
     speedLowerBound: 0.2,
 
-    speedDecay: 0.95,
-    speedGrowth: 1.05,
+    speedDecay: 0.95,    speedGrowth: 1.05,
+
+    gradientStrength: 0.02,
+    
+    viscosity: 0.05,
+    
+    // 境界処理関連の設定
+    borderBounce: true,        // 境界で跳ね返るかどうか
+    borderForce: 0.5,          // 境界からの反発力の強さ
+    borderMargin: 30,          // 境界からの反発が始まる距離
 
     computeForce: (typeI, typeJ, distance) => {
         return computeForce(typeI, typeJ, distance)
